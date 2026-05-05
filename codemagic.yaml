@@ -10,14 +10,18 @@ workflows:
           npm install
       - name: Expo Prebuild
         script: |
-          # Vynútime názov SoundMap, aby sedel s Xcode
           npx expo prebuild --platform ios --no-install
       - name: Build IPA for Sideloadly
         script: |
           set -e
-          # Používame presný názov SoundMap (veľké S a M)
-          xcodebuild -workspace ios/SoundMap.xcworkspace \
-            -scheme SoundMap \
+          # Automaticky nájdeme názov workspace súboru
+          WORKSPACE=$(ls ios/*.xcworkspace | head -1)
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          
+          echo "Building workspace: $WORKSPACE with scheme: $SCHEME"
+          
+          xcodebuild -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
             -configuration Release \
             -sdk iphoneos \
             -archivePath $CM_BUILD_DIR/SoundMap.xcarchive \
@@ -25,9 +29,13 @@ workflows:
           
           # Export do IPA
           mkdir -p $CM_BUILD_DIR/build
+          
+          # Hľadáme Info.plist dynamicky
+          PLIST=$(find ios -name "Info.plist" | head -1)
+          
           xcodebuild -exportArchive \
             -archivePath $CM_BUILD_DIR/SoundMap.xcarchive \
             -exportPath $CM_BUILD_DIR/build \
-            -exportOptionsPlist ios/SoundMap/Info.plist || echo "Export failed, check logs"
+            -exportOptionsPlist "$PLIST" || echo "Export failed"
     artifacts:
       - $CM_BUILD_DIR/build/*.ipa
