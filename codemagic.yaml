@@ -9,21 +9,19 @@ workflows:
           npm install
       - name: Force Expo Prebuild
         script: |
-          # Vymažeme starý ios priečinok ak existuje a vytvoríme ho nanovo
-          rm -rf ios
-          # Vynútime vytvorenie natívnych súborov s tvojím bundleIdentifierom
-          npx expo prebuild --platform ios --no-install --template bare-minimum
+          set -e
+          echo "Spúšťam Expo Prebuild..."
+          # Tento príkaz nám teraz povie presne, čo mu chýba
+          npx expo prebuild --platform ios --no-install
           
-          # Skontrolujeme čo sa vytvorilo (uvidíš to v logu)
-          ls -R ios | grep xcworkspace || echo "ERROR: Workspace stale neexistuje!"
+          echo "Kontrolujem obsah priečinka ios:"
+          ls -la ios
       - name: Build IPA for Sideloadly
         script: |
           set -e
-          # Nájdeme projekt
           WORKSPACE=$(ls ios/*.xcworkspace | head -1)
           SCHEME=$(basename "$WORKSPACE" .xcworkspace)
           
-          # Samotný Xcode Build
           xcodebuild -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
             -configuration Release \
@@ -32,13 +30,10 @@ workflows:
             archive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_ENTITLEMENTS="" \
             CODE_SIGNING_METHOD=manual
           
-          # Export do IPA (Sideloadly si ho podpíše samo)
           mkdir -p $CM_BUILD_DIR/build
           
-          # Vytvoríme dummy ExportOptions.plist pre ne-podpísaný export
           cat > ExportOptions.plist <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
