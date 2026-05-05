@@ -4,36 +4,60 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
     scripts:
-      - name: Fix permissions and install
+      - name: Install dependencies
         script: |
-          find . -name ".bin" -type d -exec chmod -R +x {} +
           npm install
-      - name: Expo Prebuild
+      - name: Force Expo Prebuild
         script: |
-          # Pridáme --clean, aby sa to skúsilo vytvoriť nanovo
-          npx expo prebuild --platform ios --no-install
-          # Pozrieme sa, či ten priečinok ios vôbec vznikol
-          ls -d ios || echo "Priečinok ios NEEXISTUJE!"
+          # Vymažeme starý ios priečinok ak existuje a vytvoríme ho nanovo
+          rm -rf ios
+          # Vynútime vytvorenie natívnych súborov s tvojím bundleIdentifierom
+          npx expo prebuild --platform ios --no-install --template bare-minimum
+          
+          # Skontrolujeme čo sa vytvorilo (uvidíš to v logu)
+          ls -R ios | grep xcworkspace || echo "ERROR: Workspace stale neexistuje!"
       - name: Build IPA for Sideloadly
         script: |
           set -e
-          # Ak prebuild neuspel, tu to padne s jasnou chybou
+          # Nájdeme projekt
           WORKSPACE=$(ls ios/*.xcworkspace | head -1)
           SCHEME=$(basename "$WORKSPACE" .xcworkspace)
           
+          # Samotný Xcode Build
           xcodebuild -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
             -configuration Release \
             -sdk iphoneos \
             -archivePath $CM_BUILD_DIR/SoundMap.xcarchive \
-            archive
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_ENTITLEMENTS="" \
+            CODE_SIGNING_METHOD=manual
           
+          # Export do IPA (Sideloadly si ho podpíše samo)
           mkdir -p $CM_BUILD_DIR/build
-          PLIST=$(find ios -name "Info.plist" | head -1)
           
+          # Vytvoríme dummy ExportOptions.plist pre ne-podpísaný export
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>ad-hoc</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>compileBitcode</key>
+              <false/>
+          </dict>
+          </plist>
+          EOF
+
           xcodebuild -exportArchive \
             -archivePath $CM_BUILD_DIR/SoundMap.xcarchive \
             -exportPath $CM_BUILD_DIR/build \
-            -exportOptionsPlist "$PLIST" || echo "Export failed"
+            -exportOptionsPlist ExportOptions.plist \
+            CODE_SIGNING_ALLOWED=NO
     artifacts:
       - $CM_BUILD_DIR/build/*.ipa
