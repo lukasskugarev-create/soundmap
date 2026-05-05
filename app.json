@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "SoundMap",
+    "slug": "soundmap",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": { "backgroundColor": "#0a0f0d" },
+    "ios": {
+      "bundleIdentifier": "com.soundmap.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "SoundMap potrebuje mikrofón na nahrávanie zvukov.",
+        "NSLocationWhenInUseUsageDescription": "SoundMap používa tvoju polohu na označenie miesta nahrávky."
+      }
+    },
+    "android": {
+      "package": "com.soundmap.app",
+      "permissions": ["RECORD_AUDIO", "ACCESS_FINE_LOCATION"]
+    },
+    "plugins": ["expo-router", "expo-av", "expo-location"],
+    "scheme": "soundmap",
+    "experiments": { "typedRoutes": true }
+  }
+}
