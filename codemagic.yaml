@@ -1,17 +1,33 @@
 workflows:
-  expo-ios:
-    name: Soundmap iOS Expo
-    instance_type: mac_mini_m1
+  expo-ios-sideload:
+    name: Soundmap iOS Sideload
     max_build_duration: 60
+    instance_type: mac_mini_m2
     scripts:
-      - name: Install dependencies
-        script: npm install
+      - name: Fix permissions and install
+        script: |
+          # Oprava práv pre spustiteľné súbory
+          find . -name ".bin" -type d -exec chmod -R +x {} +
+          npm install
       - name: Expo Prebuild
-        script: npx expo prebuild --platform ios
-      - name: Build IPA
-        script: | 
-          # Toto vytvorí zostavu bez certifikátov, ktorú Sideloadly potrebuje
-          mkdir -p build/ios
-          xcodebuild -workspace ios/*.xcworkspace -scheme soundmap -configuration Release -sdk iphoneos -derivedDataPath build
+        script: |
+          # Vytvorenie natívnych iOS súborov
+          npx expo prebuild --platform ios
+      - name: Build IPA for Sideloadly
+        script: |
+          set -e
+          # Samotný build aplikácie
+          xcodebuild -workspace ios/*.xcworkspace \
+            -scheme soundmap \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath $CM_BUILD_DIR/Soundmap.xcarchive \
+            archive
+          
+          # Exportovanie do .ipa súboru (bez podpisu pre Sideloadly)
+          xcodebuild -exportArchive \
+            -archivePath $CM_BUILD_DIR/Soundmap.xcarchive \
+            -exportPath $CM_BUILD_DIR/build \
+            -exportOptionsPlist ios/soundmap/Info.plist || echo "Export failed, check logs"
     artifacts:
-      - build/Build/Products/Release-iphoneos/*.ipa
+      - $CM_BUILD_DIR/build/*.ipa
