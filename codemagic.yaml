@@ -10,15 +10,16 @@ workflows:
           npm install
       - name: Expo Prebuild
         script: |
+          # Pridáme --clean, aby sa to skúsilo vytvoriť nanovo
           npx expo prebuild --platform ios --no-install
+          # Pozrieme sa, či ten priečinok ios vôbec vznikol
+          ls -d ios || echo "Priečinok ios NEEXISTUJE!"
       - name: Build IPA for Sideloadly
         script: |
           set -e
-          # Automaticky nájdeme názov workspace súboru
+          # Ak prebuild neuspel, tu to padne s jasnou chybou
           WORKSPACE=$(ls ios/*.xcworkspace | head -1)
           SCHEME=$(basename "$WORKSPACE" .xcworkspace)
-          
-          echo "Building workspace: $WORKSPACE with scheme: $SCHEME"
           
           xcodebuild -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
@@ -27,10 +28,7 @@ workflows:
             -archivePath $CM_BUILD_DIR/SoundMap.xcarchive \
             archive
           
-          # Export do IPA
           mkdir -p $CM_BUILD_DIR/build
-          
-          # Hľadáme Info.plist dynamicky
           PLIST=$(find ios -name "Info.plist" | head -1)
           
           xcodebuild -exportArchive \

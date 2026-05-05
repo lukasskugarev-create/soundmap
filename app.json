@@ -4,21 +4,29 @@
     "slug": "soundmap",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
-    "splash": { "backgroundColor": "#0a0f0d" },
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "bundleIdentifier": "com.soundmap.app",
-      "infoPlist": {
-        "NSMicrophoneUsageDescription": "SoundMap potrebuje mikrofón na nahrávanie zvukov.",
-        "NSLocationWhenInUseUsageDescription": "SoundMap používa tvoju polohu na označenie miesta nahrávky."
-      }
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lukas.soundmap"
     },
     "android": {
-      "package": "com.soundmap.app",
-      "permissions": ["RECORD_AUDIO", "ACCESS_FINE_LOCATION"]
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.lukas.soundmap"
     },
-    "plugins": ["expo-router", "expo-av", "expo-location"],
-    "scheme": "soundmap",
-    "experiments": { "typedRoutes": true }
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
   }
 }
